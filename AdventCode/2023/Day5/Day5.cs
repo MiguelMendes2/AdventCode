@@ -4,104 +4,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace AdventCode.Days
 {
 	public class Day5 : IDay
 	{
+
 		public void Run()
 		{
 			string[] input = File.ReadAllLines("2023\\Day5\\Input.txt");
+			
+			Console.WriteLine($"Part 1: {PartOne(input)}");
+			Console.WriteLine($"Part 2: {PartTwo(input)}");
+		}
 
-			string prevType = "seed";
-			string type = "";
-			List<Map> typeMaps = new();
+		internal long PartOne(string[] input)
+		{
 			List<long> seeds = input[0].Split(':')[1].Split(' ')
 				.Where(x => !String.IsNullOrEmpty(x)).Select(long.Parse).ToList();
-			
-			Console.WriteLine($"{PartOne(seeds, input)}");
-			Console.WriteLine($"{PartTwo(seeds, input)}");
-		}
-
-		internal long PartOne(List<long> seeds, string[] input)
-		{
-			string prevType = "seed";
-			string type = "";
-			List<Map> typeMaps = new();
+			List<Map> typeMaps = GetMap(input);
+			long min = long.MaxValue;
 			foreach (var seed in seeds)
 			{
-				typeMaps.Add(new Map
-				{
-					TypeName = prevType,
-					Source = seed,
-					Destination = seed
-				});
+				long val = GetLocation(typeMaps, seed);
+				if(val < min) 
+					min = val;
 			}
-			List<string> typeLines = new();
-			for (int i = 2; i < input.Length; i++)
-			{
-				if (input[i].Split('-').Length == 3)
-				{
-					type = input[i].Split('-')[2].Split(' ')[0];
-				}
-				else if (input[i]?.Trim() != "")
-				{
-					typeLines.Add(input[i]);
-				}
-				else
-				{
-					typeMaps.AddRange(GetMap(typeLines, type, prevType));
-					typeLines = new();
-					prevType = type;
-				}
-			}
-			typeMaps.AddRange(GetMap(typeLines, type, prevType));
-			List<long> x = new();
-			foreach (var seed in seeds)
-			{
-				x.Add(getLocation(typeMaps, seed));
-			}
-			return x.Min();
+			return min;
 		}
 
-		internal long PartTwo(List<long> seeds, string[] input)
-		{
-			string prevType = "seed";
-			string type = "";
-			List<Map> typeMaps = new();
-			for(int i = 0; i < seeds.Count; i+= 2)
-			{
-				typeMaps.Add(new Map
-				{
-					TypeName = prevType,
-					Source = seeds[i],
-					Destination = seeds[i] + seeds[i + 1] - 1
-				});				
-			}
-			List<string> typeLines = new();
-			for (int i = 2; i < input.Length; i++)
-			{
-				if (input[i].Split('-').Length == 3)
-				{
-					type = input[i].Split('-')[2].Split(' ')[0];
-				}
-				else if (input[i]?.Trim() != "")
-				{
-					typeLines.Add(input[i]);
-				}
-				else
-				{
-					typeMaps.AddRange(GetMap(typeLines, type, prevType));
-					typeLines = new();
-					prevType = type;
-				}
-			}
-			typeMaps.AddRange(GetMap(typeLines, type, prevType));
-
-			return GetMinSeed(typeMaps);
-		}
-
-		internal long getLocation(List<Map> typeMaps, long location)
+		internal long GetLocation(List<Map> typeMaps, long location)
 		{
 			string typeName = "seed";
 			Map nextType = typeMaps.Where(x => x.PrevTypeName == typeName).FirstOrDefault();
@@ -109,7 +42,7 @@ namespace AdventCode.Days
 			{
 				var matchs = typeMaps.Where(x => x.Source <= location
 					&& x.Source + x.Range >= location && x.PrevTypeName == typeName).ToList();
-				
+
 				if (matchs.Count > 0)
 				{
 					long min = -1;
@@ -117,7 +50,7 @@ namespace AdventCode.Days
 					{
 						long diff = location - match.Source;
 						long local = match.Destination + diff;
-						if(local < min || min < 0)
+						if (local < min || min < 0)
 						{
 							min = local;
 						}
@@ -131,69 +64,101 @@ namespace AdventCode.Days
 			return location;
 		}
 
-		internal long GetMinSeed(List<Map> typeMaps)
+		internal List<Map> GetMap(string[] lines)
 		{
-			long result = -1;
-			bool foundSeed = false;
-			while (!foundSeed)
-			{
-				string typeName = "location";
-				int tries = 0;
-				long tempResult = 0;
-				long location = typeMaps.Where(x => x.TypeName == typeName).Min(x => x.Destination) + tries;
-				Map prevType = typeMaps.Where(x => x.TypeName == typeName).FirstOrDefault();
-				do
-				{
-					var matchs = typeMaps.Where(x => x.Source <= location
-					&& x.Source + x.Range >= location && x.PrevTypeName == prevType.PrevTypeName).ToList();
-
-					if (matchs.Count > 0)
-					{
-						long min = -1;
-						foreach (var match in matchs)
-						{
-							long diff = location - match.Source;
-							long local = match.Destination + diff;
-							if (local < min || min < 0)
-							{
-								min = local;
-							}
-						}
-						tempResult = min;
-					}
-					else
-					{
-						break;
-					}
-					typeName = prevType.PrevTypeName;
-					prevType = typeMaps.Where(x => x.TypeName == typeName).FirstOrDefault();
-
-				} while (result < 0);
-				tries++;
-			}
-			
-			return result;
-		}
-
-		internal List<Map> GetMap(List<string> lines, string type, string prevType)
-		{
+			int i = 2;
 			List<Map> typeMaps = new();
-			for(int i = 0; i < lines.Count; i++)
+			string type = "";
+			string prevType = "";
+			while (i < lines.Length)
 			{
-				long[] nums = lines[i].Split(' ').Select(long.Parse).ToArray();
-				Map map = new()
+				if (lines[i].Split("-to-").Length == 2)
 				{
-					TypeName = type,
-					PrevTypeName = prevType,
-					Destination = nums[0],
-					Source = nums[1],
-					Range = nums[2]
-				};
-				typeMaps.Add(map);
+					string[] types = lines[i].Split("-to-");
+					prevType = types[0];
+					type = types[1].Split(' ')[0];
+				}
+				else if (lines[i] != "")
+				{
+					List<long> nums = lines[i].Split(' ').Select(long.Parse).ToList();
+					typeMaps.Add(new()
+					{
+						TypeName = type,
+						PrevTypeName = prevType,
+						Destination = nums[0],
+						Source = nums[1],
+						Range = nums[2]
+					});
+				}
+				i++;
 			}
 			return typeMaps;
 		}
 
+
+		internal long PartTwo(string[] input)
+		{
+			List<Range> seedRanges = GetRangedSeeds(input);
+			List<Map> typeMaps = GetMap(input).OrderBy(x => x.Source).ToList();
+
+			foreach(var maps in typeMaps.GroupBy(x => x.TypeName))
+			{
+				List<Range> newRange = new();
+				foreach(var seedRange in seedRanges)
+				{
+					var range = seedRange;
+					foreach(var map in maps)
+					{
+						// obter zonas de exclusão em que o map não tem source, logo o start da seed vai ser igual à destination
+						if(range.Start < map.Source)
+						{
+							newRange.Add( new Range(range.Start, Math.Min(range.End, map.Destination - 1)));
+							range.End = map.Destination;
+							// valida se é zona de exclusão 
+							if (range.Start > map.Destination)
+								break;
+						}
+
+						if (range.Start <= map.Destination)
+						{
+							newRange.Add(new Range(range.Start + map.Range, Math.Min(range.End, map.Destination) + map.Range));
+							range.End = map.Destination + 1;
+							// valida se é zona de exclusão 
+							if (range.Start > map.Destination)
+								break;
+						}
+					}
+					if (range.Start <= range.End)
+						newRange.Add(range);
+				}
+				seedRanges = newRange;
+			}
+			return seedRanges.Min(x => x.Start);
+
+			//foreach (var seed in seeds)
+			//{
+			//	long newSeed = seed;
+			//	foreach (var map in typeMaps)
+			//	{
+			//		if(seed >= map.Destination && seed < map.Source + map.Range)
+			//		{
+			//			newSeed = map.Source + (seed - map.Destination);
+			//		}
+			//	}
+			//}
+			return 0;//seeds.Min();
+		}
+
+		internal List<Range> GetRangedSeeds(string[] input)
+		{
+			List<Range> rangedSeeds = new();
+			string[] seedLine = input[0].Split(' ');
+			for (int i = 1; i < seedLine.Length; i += 2)
+			{
+				rangedSeeds.Add(new Range(long.Parse(seedLine[i]), long.Parse(seedLine[i + 1])));
+			}
+			return rangedSeeds;
+		}
 
 		internal struct Map
 		{
@@ -202,6 +167,12 @@ namespace AdventCode.Days
 			public long Source { get; set; }
 			public long Destination { get; set; }
 			public long Range { get; set; }
+		}
+
+		internal struct Range(long start, long end)
+		{
+			public long Start { get; set; } = start;
+			public long End { get; set; } = end;
 		}
 	}
 }

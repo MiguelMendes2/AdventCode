@@ -12,7 +12,7 @@ namespace AdventCode._2023
 	{
 		public void RunYear()
 		{
-			for (int i = 5; i <= 5; i++)
+			for (int i = 6; i <=6; i++)
 			{
 				Console.WriteLine($"--- Day {i} ---");
 				var service = GetDayService(i);
@@ -34,6 +34,8 @@ namespace AdventCode._2023
 				//	return new Day4();
 				case 5:
 					return new Day5();
+				case 6:
+					return new Day6();
 				default:
 					throw new KeyNotFoundException(); // or maybe return null, up to you
 			}

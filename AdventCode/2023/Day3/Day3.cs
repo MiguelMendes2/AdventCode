@@ -66,8 +66,8 @@ namespace AdventCode.Days
 				.Where(gears => gears.Length == 2)
 				.Sum(gears => gears[0].Value * gears[1].Value);
 
-			Console.WriteLine($"Sum of the part numbers: {part1}");
-			Console.WriteLine($"Gear Ratio: {part2}");
+			Console.WriteLine($"Part 1: {part1}");
+			Console.WriteLine($"Part 2: {part2}");
 		}
 
 		static bool AreAdjacent(Number number, Symbol symbol)

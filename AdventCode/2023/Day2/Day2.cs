@@ -22,8 +22,8 @@ namespace AdventCode.Days
 				cubes.Add(GetCube(line));
 			}
 
-			Console.WriteLine("Posible sets sum: " + cubes.Where(x => x.possible).Sum(x => x.GameId));
-			Console.WriteLine("The power of all sets: " + cubes.Sum(x => x.power));
+			Console.WriteLine("Part 1: " + cubes.Where(x => x.possible).Sum(x => x.GameId));
+			Console.WriteLine("Part 2: " + cubes.Sum(x => x.power));
 		}
 
 		internal Cube GetCube(string line)
